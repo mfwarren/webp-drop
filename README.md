@@ -46,6 +46,16 @@ Scripts/create_dmg.sh "build/release/WebP Drop.app" "dist/WebP-Drop-1.0.0.dmg"
 
 The GitHub Action runs the same scripts on `macos-15`.
 
+## Testing a DMG
+To test a locally built DMG without installing over an existing copy:
+
+```sh
+hdiutil verify "dist/WebP-Drop-1.0.0.dmg"
+open "dist/WebP-Drop-1.0.0.dmg"
+```
+
+In the mounted window, drag **WebP Drop.app** onto the **Applications** shortcut. For a clean first-launch test, remove any previous copy from `/Applications` first, then launch the installed app. Since the app is ad-hoc signed but not notarized, use right-click -> **Open** if Gatekeeper blocks the first launch.
+
 ## Defaults
 - Output: side-by-side `.webp`
 - Quality: 80
