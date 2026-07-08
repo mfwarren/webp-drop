@@ -2,6 +2,17 @@
 
 A minimal, premium-feel macOS app for converting images to WebP with drag-and-drop and a Finder Quick Action.
 
+## Download
+Builds are produced by GitHub Actions as a DMG artifact. Version tags like `v1.0.0` also publish the DMG to GitHub Releases.
+
+To install from a DMG:
+1. Download `WebP-Drop-*.dmg` from the latest release or workflow artifact.
+2. Open the DMG.
+3. Drag **WebP Drop.app** into **Applications**.
+4. Because the app is unsigned and not notarized, macOS may block the first launch. Right-click **WebP Drop.app**, choose **Open**, then confirm.
+
+The automated DMG currently targets Apple Silicon Macs and macOS 15 or newer.
+
 ## App identity
 - App name: WebP Drop
 - Publisher: Scalar Shift
@@ -23,6 +34,17 @@ The Action Extension provides the right-click Finder Quick Action. It reads sele
 5. Move or copy `ActionExtension/ActionRequestHandler.swift` into the extension target.
 6. Add `WebPCore` to both targets' dependencies.
 7. Add a bundled `cwebp` binary to both targets (Copy Bundle Resources) for the fallback encoder.
+
+## Command-line build
+The current repository build uses SwiftPM for `WebPCore` and direct `swiftc` compilation for the app bundle.
+
+```sh
+swift test
+APP_VERSION=1.0.0 BUILD_NUMBER=1 Scripts/build_app.sh
+Scripts/create_dmg.sh "build/release/WebP Drop.app" "dist/WebP-Drop-1.0.0.dmg"
+```
+
+The GitHub Action runs the same scripts on `macos-15`.
 
 ## Defaults
 - Output: side-by-side `.webp`

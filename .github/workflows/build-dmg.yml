@@ -1,0 +1,72 @@
+name: Build DMG
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build macOS app and DMG
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build app bundle
+        id: build_app
+        env:
+          RAW_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0' }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          MACOS_DEPLOYMENT_TARGET: "15.0"
+          ARCH: arm64
+        run: |
+          export APP_VERSION="${RAW_VERSION#v}"
+          app_path="$(Scripts/build_app.sh)"
+          echo "app_path=$app_path" >> "$GITHUB_OUTPUT"
+
+      - name: Create DMG
+        id: create_dmg
+        run: |
+          mkdir -p dist
+          safe_ref="${GITHUB_REF_NAME//\//-}"
+          dmg_path="dist/WebP-Drop-${safe_ref}.dmg"
+          Scripts/create_dmg.sh "${{ steps.build_app.outputs.app_path }}" "$dmg_path"
+          echo "dmg_path=$dmg_path" >> "$GITHUB_OUTPUT"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebP-Drop-DMG
+          path: ${{ steps.create_dmg.outputs.dmg_path }}
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+          DMG_PATH: ${{ steps.create_dmg.outputs.dmg_path }}
+        run: |
+          gh release create "$TAG_NAME" "$DMG_PATH" \
+            --title "WebP Drop $TAG_NAME" \
+            --notes "Unsigned macOS DMG for WebP Drop. If macOS blocks launch, right-click the app and choose Open."
